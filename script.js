@@ -37,11 +37,11 @@ const game = (function () {
                 boardContent[i][j] = null;
             }
         }
-        setFirstPlayerName(undefined);
-        setSecondPlayerName(undefined);
-
+        const resultText = document.querySelector(".Result");
+        resultText.innerText = "In Progress"
         gameStatus.playerInTurn.playerName = undefined;
-        gameStatus.winner = undefined;
+        gameStatus.playerInTurn.symbol = undefined;
+        gameStatus.Done = false;
         
     };
 
@@ -53,7 +53,7 @@ const game = (function () {
         // console.log(secondPlayer);
     };
     const gameStatus = (function() {
-        let winner = undefined;
+        let Done = false;
         const playerInTurn = createPlayer(undefined, undefined);
 
 
@@ -72,6 +72,20 @@ const game = (function () {
             // here decide the winner if any
             let isOver = false;
             let winnerSymbol = null;
+            let count = 0;
+            for(let i = 0; i<3; i++){
+                for(let j = 0; j<3; j++){
+                    if(boardContent[i][j] != null){
+                        count++;
+                    }
+                }
+            }
+            if(count == 9){
+                isOver = true;
+                winnerSymbol = "draw";
+            }
+
+
             if(boardContent[1][1] == boardContent[2][2] &&
                  boardContent[2][2] == boardContent[0][0]
                  && boardContent[2][2] !== null){
@@ -99,19 +113,40 @@ const game = (function () {
                     break;
                 }
             }
+
+
+
+            
             return {isOver, winnerSymbol};
         };
 
-        return {winner, playerInTurn, changeTurn, checkState};
+        return {playerInTurn, changeTurn, checkState, Done};
     })();
 
     const playTurn = (a, b) => {
+        if(gameStatus.Done){
+            console.log("entering")
+            return;
+        }
+        if(boardContent[a][b] != null){
+            console.log(game.boardContent)
+            return;
+        }
         gameStatus.changeTurn();
-        boardContent[a][b] = gameStatus.playerInTurn.symbol? "x":"o";
+        boardContent[a][b] = gameStatus.playerInTurn.symbol? "o":"x";
         const gameResult = gameStatus.checkState();
         if(gameResult.isOver){
+            gameStatus.Done = true;
+            const resultText = document.querySelector(".Result");
             console.log(gameResult.winnerSymbol);
-            resetGame();
+            console.log(gameStatus.Done);
+            if(gameResult.winnerSymbol == 'draw'){
+                resultText.innerText = "Draw!"
+            }else {
+                resultText.innerText = `The winner is ${gameResult.winnerSymbol.toUpperCase()}`;
+            }
+
+
         }
     };
 
@@ -120,14 +155,43 @@ const game = (function () {
           printBoardAndStatus, playTurn};
 })();
 
-game.setFirstPlayerName('basheer');
-game.setSecondPlayerName('mohammad');
+
+const renderBoard = () => {
+    const content = document.querySelectorAll('#board div');
+    content.forEach(element => {
+       element.remove(); 
+    });
+    const board = document.querySelector('#board');
+    for(let i = 0; i<3; i++){
+        for(let j = 0; j<3; j++){
+            const square = document.createElement('div');
+            square.classList.add(`row${i}`);
+            square.classList.add(`column${j}`);
+            square.addEventListener('click', (e) => {
+                const classes = e.target.classList;
+                const row = classes[0];
+                const column = classes[1];
+                const rowNum = Number(row[row.length -1]);
+                const colNum = Number(column[column.length -1])
+                if(!game.gameStatus.Done && game.boardContent[rowNum][colNum] == null){
+                    e.target.classList.add(`${(game.gameStatus.playerInTurn.symbol)?"x":"y"}`);
+                }
+                game.playTurn(rowNum, colNum);
+               
+            });
+            board.append(square);
+        }
+    }
+}
+
+const restartButton = document.getElementById('restart');
+restartButton.addEventListener('click', () => {
+    game.resetGame();
+    renderBoard();
+});
+
+game.setFirstPlayerName('firstPlayer');
+game.setSecondPlayerName('secondPlayer');
 
 
-
-game.printBoardAndStatus();
-game.playTurn(1, 1);
-game.playTurn(2, 2);
-game.playTurn(1, 2);
-game.playTurn(2, 0);
-console.log(game);
+renderBoard();
